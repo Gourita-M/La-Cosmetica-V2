@@ -1,0 +1,16 @@
+
+https://github.com/users/Gourita-M/projects/11/views/1
+
+https://github.com/Gourita-M/Cosmetica-Brief
+
+https://github.com/Gourita-M/Cosmetica-Brief/tree/main/UML
+
+https://www.canva.com/design/DAG2ElzVWAY/bSkmQ7k_uML_0OFCq55hHQ/edit
+
+
+
+Bonjour M. Achraf,
+
+J’ai terminé le projet API de La Cosmetica. Les clients peuvent s’authentifier (JWT), consulter les produits, passer et suivre leurs commandes. Les employés gèrent les commandes, et les administrateurs gèrent les produits, catégories et statistiques.
+
+Le projet a été réalisé avec Laravel (MVC), testé avec Postman, avec des tests unitaires et une documentation des endpoints.
