@@ -8,6 +8,11 @@ use App\Models\Product;
 
 class ProductController extends Controller
 {
+    public function showProducts()
+    {
+        return View('Products.index');
+    }
+
     /**
      * Display a listing of the resource.
      */
