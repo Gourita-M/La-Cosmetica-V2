@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
@@ -52,7 +53,17 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $token,
-            'user' => auth()->user()
+            'user' => auth::user()->name
         ]);
+    }
+
+    public function index()
+    {
+        return View('Auth.login');
+    }
+
+    public function indexRegister()
+    {
+        return View('Auth.register');
     }
 }
