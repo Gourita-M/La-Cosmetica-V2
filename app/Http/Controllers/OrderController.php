@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Order;
 use App\Models\Product;
 use App\DAO\OrderDAO;
@@ -23,7 +24,7 @@ class OrderController extends Controller
      */
     public function index()
     {
-        $user = auth()->user();
+        $user = auth::user();
 
         if (in_array($user->role, ['admin', 'employee'])) {
             $orders = $this->orderDAO->getAllOrders();
@@ -83,7 +84,7 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        $user = auth()->user();
+        $user = auth::user();
 
         if ($order->users_id !== $user->id && !in_array($user->role, ['admin', 'employee'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
@@ -101,7 +102,7 @@ class OrderController extends Controller
             'status' => 'required|in:pending,prepared,delivered,cancelled'
         ]);
 
-        if (!in_array(auth()->user()->role, ['admin', 'employee'])) {
+        if (!in_array(auth::user()->role, ['admin', 'employee'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -112,7 +113,7 @@ class OrderController extends Controller
 
     public function cancel(Order $order)
     {
-        $user = auth()->user();
+        $user = auth::user();
 
         if ($order->users_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized. Only the order owner can cancel their order.'], 403);
