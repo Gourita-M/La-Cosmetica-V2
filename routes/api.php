@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\OrderController;
@@ -9,7 +10,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StatisticsController;
 
 Route::get('/profile', function(Request $request) {
-        return auth()->user();
+        return auth::user();
     })->middleware('auth:api');
 
 Route::get('/orders', [OrderController::class, 'index'])->middleware('auth:api');
