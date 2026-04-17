@@ -109,7 +109,7 @@
 </head>
 
 <body class="bg-surface text-on-surface min-h-screen flex flex-col">
-    <!-- TopAppBar -->
+   
     <header class="docked full-width top-0 z-50 bg-[#f7f9fc] dark:bg-slate-950 shadow-sm dark:shadow-none">
         <div class="flex items-center justify-between px-8 w-full h-20 max-w-screen-2xl mx-auto">
             <div class="flex items-center gap-12">
@@ -154,7 +154,6 @@
         </div>
     </header>
     <main class="flex-grow w-full max-w-screen-2xl mx-auto px-8 py-12">
-        <!-- Hero & Title Section -->
         <section class="mb-16">
             <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
@@ -179,12 +178,11 @@
                 </div>
             </div>
         </section>
-        <!-- Product Grid -->
-        <div id="Products" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        <div id="Products">
+            
             
         </div>
     </main>
-    <!-- Footer -->
     <footer class="full-width border-t border-slate-200 dark:border-slate-800 bg-[#f2f4f7] dark:bg-slate-950 mt-20">
         <div
             class="flex flex-col md:flex-row justify-between items-center px-12 py-10 w-full max-w-screen-2xl mx-auto">

@@ -59,3 +59,97 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 # Cosmetica-Brief
 # La-Cosmetica-V2
+
+## API Overview
+
+Base URL: `/api`
+
+This project includes:
+- JWT authentication (`tymon/jwt-auth`)
+- Slug-based product access (`spatie/laravel-sluggable`)
+- DAO layer for direct database interactions:
+  - `OrderDAO`
+  - `StatisticsDAO`
+  - `CategoryDAO`
+  - `ProductDAO`
+
+## Postman / Swagger (Equivalent)
+
+- OpenAPI spec is available at `docs/openapi.yaml`.
+- You can import `docs/openapi.yaml` directly in Postman:
+  - Postman -> Import -> File -> `docs/openapi.yaml`
+- This provides a documented, testable endpoint collection.
+
+## Authentication (JWT)
+
+- `POST /register` - create a `customer` account.
+- `POST /login` - get JWT token + role-based permissions.
+- Add header for secured routes: `Authorization: Bearer <token>`.
+
+Example login payload:
+
+```json
+{
+  "email": "customer@example.com",
+  "password": "password"
+}
+```
+
+## Customer Endpoints
+
+- `GET /profile` - authenticated profile.
+- `GET /products` - list products (`name`, `description`, `price`, `image`, `images`, `category`).
+- `GET /products/{slug}` - product details by slug (example: `/api/products/bio-moisturizing-cream`).
+- `POST /orders` - place an order by product slug + quantity.
+- `GET /orders` - list own orders.
+- `GET /orders/{order}` - get own order details/status.
+- `POST /orders/{order}/cancel` - cancel order only when status is `pending`.
+
+Example order payload:
+
+```json
+{
+  "products": [
+    { "slug": "bio-moisturizing-cream", "quantity": 2 },
+    { "slug": "vitamin-c-serum", "quantity": 1 }
+  ]
+}
+```
+
+## Employee Endpoints
+
+- `GET /orders` - list all orders.
+- `PUT /orders/{order}/status` with `status` in `being_prepared|delivered`.
+
+## Administrator Endpoints
+
+- Category management:
+  - `POST /categories`
+  - `PUT /categories/{category}`
+  - `DELETE /categories/{category}`
+- Product management:
+  - `POST /products`
+  - `PUT /products/{product}`
+  - `DELETE /products/{product}`
+- Statistics:
+  - `GET /statistics` for total sales, most popular products, and distribution by category.
+
+## Error Handling
+
+API exceptions are normalized for `/api/*` responses in `bootstrap/app.php`.
+
+- `401` unauthenticated
+- `403` forbidden (role/ownership)
+- `404` resource not found (for example unknown product slug)
+- `422` validation/state errors (invalid payload, insufficient stock, invalid status transitions)
+
+Validation errors follow this structure:
+
+```json
+{
+  "message": "Validation error.",
+  "errors": {
+    "field_name": ["Validation message"]
+  }
+}
+```
