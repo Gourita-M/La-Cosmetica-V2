@@ -4,10 +4,36 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
+use App\DAO\ProductDAO;
 use App\Models\Product;
 
 class ProductController extends Controller
 {
+    public function __construct(private ProductDAO $productDAO)
+    {
+    }
+
+    private function productPayload(Product $product): array
+    {
+        return [
+            'slug' => $product->slug,
+            'name' => $product->name,
+            'description' => $product->description,
+            'price' => $product->price,
+            'image' => $product->image,
+            'images' => $product->image ? [$product->image] : [],
+            'category' => $product->category ? [
+                'id' => $product->category->id,
+                'name' => $product->category->name,
+            ] : null,
+        ];
+    }
+
+    private function ensureAdmin(): void
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403, 'Only administrators can manage products.');
+    }
+
     public function showProducts()
     {
         return View('Products.index');
@@ -18,8 +44,10 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $products = Product::with('category')->get();
-        return response()->json($products);
+        $products = $this->productDAO->getAllWithCategory();
+        return response()->json(
+            $products->map(fn (Product $product) => $this->productPayload($product))->values()
+        );
     }
 
     /**
@@ -27,7 +55,8 @@ class ProductController extends Controller
      */
     public function store(StoreProductRequest $request)
     {
-        $product = Product::create($request->validated());
+        $this->ensureAdmin();
+        $product = $this->productDAO->create($request->validated());
         return response()->json($product->load('category'), 201);
     }
 
@@ -36,9 +65,8 @@ class ProductController extends Controller
      */
     public function show($slug)
     {
-        
-        $product = Product::with('category')->where('slug', $slug)->firstOrFail();
-        return response()->json($product);
+        $product = $this->productDAO->findBySlugWithCategory($slug);
+        return response()->json($this->productPayload($product));
     }
 
     /**
@@ -46,7 +74,8 @@ class ProductController extends Controller
      */
     public function update(UpdateProductRequest $request, Product $product)
     {
-        $product->update($request->validated());
+        $this->ensureAdmin();
+        $product = $this->productDAO->update($product, $request->validated());
         return response()->json($product->load('category'));
     }
 
@@ -55,7 +84,8 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        $product->delete();
+        $this->ensureAdmin();
+        $this->productDAO->delete($product);
         return response()->json(null, 204);
     }
 }
