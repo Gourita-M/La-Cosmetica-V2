@@ -14,12 +14,15 @@ class CategoryTest extends TestCase
 
     protected $user;
     protected $token;
+    protected $adminToken;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->user = User::factory()->create();
         $this->token = JWTAuth::fromUser($this->user);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->adminToken = JWTAuth::fromUser($admin);
     }
 
     public function test_can_list_categories()
@@ -35,7 +38,7 @@ class CategoryTest extends TestCase
 
     public function test_can_create_category()
     {
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->adminToken])
                          ->postJson('/api/categories', [
                              'name' => 'Skincare',
                              'slug' => 'skincare'
@@ -61,7 +64,7 @@ class CategoryTest extends TestCase
     {
         $category = Category::factory()->create();
 
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->adminToken])
                          ->putJson('/api/categories/' . $category->id, [
                              'name' => 'Updated Name',
                              'slug' => 'updated-name'
@@ -76,7 +79,7 @@ class CategoryTest extends TestCase
     {
         $category = Category::factory()->create();
 
-        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->token])
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->adminToken])
                          ->deleteJson('/api/categories/' . $category->id);
 
         $response->assertStatus(204);
@@ -87,5 +90,39 @@ class CategoryTest extends TestCase
     {
         $response = $this->getJson('/api/categories');
         $response->assertStatus(401);
+    }
+
+    public function test_customer_cannot_create_category(): void
+    {
+        $response = $this->withHeaders(['Authorization' => 'Bearer '.$this->token])
+            ->postJson('/api/categories', [
+                'name' => 'Bodycare',
+                'slug' => 'bodycare',
+            ]);
+
+        $response->assertStatus(403);
+    }
+
+    public function test_customer_cannot_update_category(): void
+    {
+        $category = Category::factory()->create();
+
+        $response = $this->withHeaders(['Authorization' => 'Bearer '.$this->token])
+            ->putJson('/api/categories/'.$category->id, [
+                'name' => 'Unauthorized Update',
+                'slug' => 'unauthorized-update',
+            ]);
+
+        $response->assertStatus(403);
+    }
+
+    public function test_customer_cannot_delete_category(): void
+    {
+        $category = Category::factory()->create();
+
+        $response = $this->withHeaders(['Authorization' => 'Bearer '.$this->token])
+            ->deleteJson('/api/categories/'.$category->id);
+
+        $response->assertStatus(403);
     }
 }
