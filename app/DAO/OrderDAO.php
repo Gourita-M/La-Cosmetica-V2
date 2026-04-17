@@ -13,7 +13,7 @@ class OrderDAO
      */
     public function getAllOrders(): Collection
     {
-        return Order::all();
+        return Order::with('items.product', 'user')->get();
     }
 
     /**
@@ -21,7 +21,9 @@ class OrderDAO
      */
     public function getUserOrders(int $userId): Collection
     {
-        return Order::where('users_id', $userId)->get();
+        return Order::with('items.product')
+            ->where('users_id', $userId)
+            ->get();
     }
 
     /**
@@ -62,5 +64,15 @@ class OrderDAO
     public function updateOrderStatus(Order $order, string $status): void
     {
         $order->update(['status' => $status]);
+    }
+
+    /**
+     * Restore product quantities from each order item.
+     */
+    public function restockOrderItems(Order $order): void
+    {
+        foreach ($order->items as $item) {
+            $item->product?->increment('stock', $item->quantity);
+        }
     }
 }
