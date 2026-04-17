@@ -10,6 +10,8 @@ class OrderItem extends Model
     /** @use HasFactory<\Database\Factories\OrderItemFactory> */
     use HasFactory;
 
+    protected $table = 'orders_items';
+
     protected $fillable = [
         'orders_id',
         'products_id',

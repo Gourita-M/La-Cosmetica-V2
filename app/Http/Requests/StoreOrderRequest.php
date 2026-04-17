@@ -24,7 +24,7 @@ class StoreOrderRequest extends FormRequest
     {
         return [
             'products' => 'required|array|min:1',
-            'products.*.slug' => 'required|string|exists:products,slug',
+            'products.*.slug' => 'required|string|distinct|exists:products,slug',
             'products.*.quantity' => 'required|integer|min:1',
         ];
     }
