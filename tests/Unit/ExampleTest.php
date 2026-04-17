@@ -1,30 +1,13 @@
-<?php 
+<?php
 
-Class Student{
-    private string $name;
-    private array $grades = [];
+namespace Tests\Unit;
 
-    public function __construct($name)
+use PHPUnit\Framework\TestCase;
+
+class ExampleTest extends TestCase
+{
+    public function test_true_is_true(): void
     {
-        $this->name = $name;
-    }
-
-    public function addGrade($grade)
-    {
-        $this->grades[] = $grade;
-    }
-
-    public function getAverage()
-    {
-        $sum = 0;
-        $count = count($this->grades);
-
-        foreach($this->grades as $grade){
-            $sum += $grade;
-        }
-
-        $average = $sum / $count;
-
-        return $average;
+        $this->assertTrue(true);
     }
 }
