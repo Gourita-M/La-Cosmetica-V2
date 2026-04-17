@@ -3,12 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreOrderRequest;
-use App\Http\Requests\UpdateOrderRequest;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Order;
-use App\Models\Product;
 use App\DAO\OrderDAO;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
@@ -24,12 +22,12 @@ class OrderController extends Controller
      */
     public function index()
     {
-        $user = auth::user();
+        $user = auth()->user();
 
-        if (in_array($user->role, ['admin', 'employee'])) {
+        if (in_array($user->role, ['admin', 'employee'], true)) {
             $orders = $this->orderDAO->getAllOrders();
         } else {
-            $orders = $user->orders ?? $this->orderDAO->getUserOrders($user->id);
+            $orders = $this->orderDAO->getUserOrders($user->id);
         }
 
         return response()->json($orders);
@@ -42,35 +40,36 @@ class OrderController extends Controller
     {
         $validated = $request->validated();
 
-        $totalAmount = 0;
+        $totalAmount = 0.0;
         $orderItems = [];
 
-        foreach ($validated['products'] as $item) {
+        $order = DB::transaction(function () use ($validated, &$orderItems, &$totalAmount) {
+            foreach ($validated['products'] as $item) {
+                $product = $this->orderDAO->getProductBySlug($item['slug']);
 
-            $product = $this->orderDAO->getProductBySlug($item['slug']);
-            
-            if (!$product) {
-                return response()->json(['message' => 'Product ' . $item['slug'] . ' not found'], 404);
+                if (!$product) {
+                    abort(404, 'Product not found: '.$item['slug']);
+                }
+
+                if ($product->stock < $item['quantity']) {
+                    abort(422, 'Insufficient stock for product: '.$product->name);
+                }
+
+                $orderItems[] = [
+                    'products_id' => $product->id,
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $product->price,
+                ];
+                $totalAmount += $product->price * $item['quantity'];
             }
 
-            if ($product->stock < $item['quantity']) {
-                return response()->json(['message' => 'Not enough stock for ' . $product->name], 400);
+            $order = $this->orderDAO->createPendingOrder(auth()->id());
+            foreach ($orderItems as $item) {
+                $this->orderDAO->createOrderItemAndDecrementStock($order, $item);
             }
 
-            $orderItems[] = [
-                'products_id' => $product->id,
-                'quantity' => $item['quantity'],
-                'unit_price' => $product->price,
-            ];
-            
-            $totalAmount += $product->price * $item['quantity'];
-        }
-
-        $order = $this->orderDAO->createPendingOrder(auth()->user()->id);
-
-        foreach ($orderItems as $item) {
-            $this->orderDAO->createOrderItemAndDecrementStock($order, $item);
-        }
+            return $order;
+        });
 
         return response()->json([
             'message' => 'Order placed successfully',
@@ -84,13 +83,13 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        $user = auth::user();
+        $user = auth()->user();
 
-        if ($order->users_id !== $user->id && !in_array($user->role, ['admin', 'employee'])) {
+        if ($order->users_id !== $user->id && !in_array($user->role, ['admin', 'employee'], true)) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        return response()->json($order);
+        return response()->json($order->load('items.product', 'user'));
     }
 
     /**
@@ -99,11 +98,23 @@ class OrderController extends Controller
     public function update(Request $request, Order $order)
     {
         $request->validate([
-            'status' => 'required|in:pending,prepared,delivered,cancelled'
+            'status' => 'required|in:being_prepared,delivered'
         ]);
 
-        if (!in_array(auth::user()->role, ['admin', 'employee'])) {
+        if (!in_array(auth()->user()->role, ['admin', 'employee'], true)) {
             return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if ($order->status === 'cancelled') {
+            return response()->json(['message' => 'Cancelled orders cannot be updated.'], 422);
+        }
+
+        if ($order->status === 'delivered') {
+            return response()->json(['message' => 'Delivered orders cannot be updated.'], 422);
+        }
+
+        if ($order->status === 'pending' && $request->status === 'delivered') {
+            return response()->json(['message' => 'Order must be marked as being prepared before delivery.'], 422);
         }
 
         $this->orderDAO->updateOrderStatus($order, $request->status);
@@ -113,17 +124,21 @@ class OrderController extends Controller
 
     public function cancel(Order $order)
     {
-        $user = auth::user();
+        $user = auth()->user();
 
         if ($order->users_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized. Only the order owner can cancel their order.'], 403);
         }
 
         if ($order->status !== 'pending') {
-            return response()->json(['message' => 'Order cannot be canceled because it is already being prepared or delivered.'], 400);
+            return response()->json(['message' => 'Order can only be cancelled while it is pending.'], 422);
         }
 
-        $this->orderDAO->updateOrderStatus($order, 'cancelled');
+        DB::transaction(function () use ($order) {
+            $order->load('items.product');
+            $this->orderDAO->updateOrderStatus($order, 'cancelled');
+            $this->orderDAO->restockOrderItems($order);
+        });
 
         return response()->json(['message' => 'Order successfully canceled', 'order' => $order]);
     }
