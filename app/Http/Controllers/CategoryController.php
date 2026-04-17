@@ -4,16 +4,26 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
+use App\DAO\CategoryDAO;
 use App\Models\Category;
 
 class CategoryController extends Controller
 {
+    public function __construct(private CategoryDAO $categoryDAO)
+    {
+    }
+
+    private function ensureAdmin(): void
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403, 'Only administrators can manage categories.');
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        return response()->json(Category::all());
+        return response()->json($this->categoryDAO->getAll());
     }
 
     /**
@@ -21,7 +31,8 @@ class CategoryController extends Controller
      */
     public function store(StoreCategoryRequest $request)
     {
-        $category = Category::create($request->validated());
+        $this->ensureAdmin();
+        $category = $this->categoryDAO->create($request->validated());
         return response()->json($category, 201);
     }
 
@@ -38,7 +49,8 @@ class CategoryController extends Controller
      */
     public function update(UpdateCategoryRequest $request, Category $category)
     {
-        $category->update($request->validated());
+        $this->ensureAdmin();
+        $category = $this->categoryDAO->update($category, $request->validated());
         return response()->json($category);
     }
 
@@ -47,7 +59,8 @@ class CategoryController extends Controller
      */
     public function destroy(Category $category)
     {
-        $category->delete();
+        $this->ensureAdmin();
+        $this->categoryDAO->delete($category);
         return response()->json(null, 204);
     }
 }
