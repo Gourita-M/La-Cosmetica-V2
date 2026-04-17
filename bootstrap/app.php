@@ -9,6 +9,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -31,8 +32,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (ModelNotFoundException $e, Request $request) {
             if ($request->is('api/*')) {
+                $model = class_basename($e->getModel());
                 return response()->json([
-                    'message' => 'Object not found.'
+                    'message' => $model.' not found.'
                 ], 404);
             }
         });
@@ -48,7 +50,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (AuthorizationException $e, Request $request) {
             if ($request->is('api/*')) {
                 return response()->json([
-                    'message' => 'Unauthorized action.'
+                    'message' => $e->getMessage() ?: 'Unauthorized action.'
                 ], 403);
             }
         });
@@ -59,6 +61,14 @@ return Application::configure(basePath: dirname(__DIR__))
                     'message' => 'Validation error.',
                     'errors' => $e->errors()
                 ], 422);
+            }
+        });
+
+        $exceptions->render(function (HttpException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'message' => $e->getMessage() ?: 'HTTP error.'
+                ], $e->getStatusCode());
             }
         });
     })->create();
