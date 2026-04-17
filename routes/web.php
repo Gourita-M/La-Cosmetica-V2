@@ -8,7 +8,4 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('login', [AuthController::class, 'index']);
-Route::get('register', [AuthController::class, 'indexRegister'])->middleware('guest');
-
-Route::get('products', [ProductController::class, 'showProducts']);
+Route::view('/{any}', 'welcome')->where('any', '.*');
